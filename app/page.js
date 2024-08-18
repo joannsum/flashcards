@@ -28,7 +28,10 @@ export default function Home() {
         headers: { origin: 'http://localhost:3000' },
       })
       const checkoutSessionJson = await checkoutSession.json()
-    
+      if (checkoutSession.statusCode === 500){
+        console.error(checkoutSession.message)
+        return
+      }
       const stripe = await getStripe()
       const {error} = await stripe.redirectToCheckout({
         sessionId: checkoutSessionJson.id,
@@ -44,7 +47,7 @@ export default function Home() {
     <AppBar position="static">
         <Toolbar >
           <Typography variant="h6" style={{flexGrow: 1}}>
-            Flashcard SaaS
+            <a href="localhost:3000">Flashcard SaaS</a>
           </Typography>
           <SignedOut>
             <Button color="inherit" href="/sign-in">Login</Button>
@@ -122,7 +125,7 @@ export default function Home() {
                         <Typography variant="h5">Pro</Typography>
                         <Typography variant="h6">$10 / Month</Typography>
                         <Typography>Advanced features including AI-powered flashcard creation and unlimited storage.</Typography>
-                        <Button variant="contained" color="primary" sx={{mt: 2}}>Choose Pro</Button>
+                        <Button variant="contained" color="primary" sx={{mt: 2}} onClick={handleSubmit}>Choose Pro</Button>
                     </Box>
                 </Grid>
                 <Grid item xs={12} md={4}>

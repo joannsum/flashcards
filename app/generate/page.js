@@ -10,6 +10,8 @@ import {
   Typography,
   Box,
   Card,
+  AppBar,
+  Toolbar,
   CardContent,
   Dialog,
   DialogTitle,
@@ -17,7 +19,7 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material'
-import { useUser } from '@clerk/nextjs'
+import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs'
 import { db } from '../../firebase.js'
 import { doc, collection, getDoc, setDoc } from 'firebase/firestore'
 import { styled } from '@mui/system'
@@ -170,7 +172,23 @@ export default function Generate() {
   }
 
   return (
+    <main>
+      <AppBar position="static">
+        <Toolbar >
+          <Typography variant="h6" style={{flexGrow: 1}}>
+            <a href="localhost:3000">Flashcard SaaS</a>
+          </Typography>
+          <SignedOut>
+            <Button color="inherit" href="/sign-in">Login</Button>
+            <Button color="inherit" href="/sign-up">Sign Up</Button>
+          </SignedOut>
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
+        </Toolbar>
+      </AppBar>
     <Container maxWidth="md">
+      
       <Box sx={{ my: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Generate Flashcards
@@ -250,5 +268,6 @@ export default function Generate() {
         </DialogActions>
       </Dialog>
     </Container>
+    </main>
   )
 }

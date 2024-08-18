@@ -7,9 +7,9 @@ export default function SignUpPage() {
   return (
     <main>
     <AppBar position="static" sx={{backgroundColor: '#3f51b5'}}>
-    <Toolbar>
-        <Typography variant="h6" sx={{flexGrow: 1}}>
-        Flashcard SaaS
+    <Toolbar >
+        <Typography variant="h6" style={{flexGrow: 1}}>
+          <a href="localhost:3000">Flashcard SaaS</a>
         </Typography>
         <Button color="inherit">
         <Link href="/sign-in" passHref>
