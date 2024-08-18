@@ -6,8 +6,11 @@ import {
   Container,
   TextField,
   Button,
+  Grid,
   Typography,
   Box,
+  Card,
+  CardContent,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -17,27 +20,38 @@ import {
 import {
   useUser
 } from '@clerk/nextjs'
+import { db } from '../../firebase'
+import { doc, collection, getDoc, writeBatch } from 'firebase/firestore'
+
 
 export default function Generate() {
   const {isLoaded, isSignedIn, user} = useUser()
   const [flashcards, setFlashCards] = useState([])
   const [flipped, setFlipped] = useState([])
   const [text, setText] = useState('')
-  const [name, setName] = useState([])
-  const [open, setOpen] = useState([])
+  // const [name, setName] = useState([])
+  // const [open, setOpen] = useState([])
   const router = useRouter()
 
-  // const [setName, setSetName] = useState('')
+  const [name, setName] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const handleOpenDialog = () => setDialogOpen(true)
   const handleCloseDialog = () => setDialogOpen(false)
+  const [isSaving, setIsSaving] = useState(false)
+
 
   const saveFlashcards = async () => {
-    if (!setName.trim()) {
+    if (!isSignedIn || !user) {
+      alert('Please sign in to save flashcards.')
+      return
+    }
+
+    if (!name.trim()) {
       alert('Please enter a name for your flashcard set.')
       return
     }
-  
+
+    setIsSaving(true)
     try {
       const userDocRef = doc(collection(db, 'users'), user.id)
       const userDocSnap = await getDoc(userDocRef)
@@ -58,13 +72,16 @@ export default function Generate() {
       await batch.commit()
   
       alert('Flashcards saved successfully!')
-      handleClose()
+      setIsSaving(false)
+      setDialogOpen(false)
       router.push('/flashcards')
       setName('')
     } catch (error) {
+      setIsSaving(false)
       console.error('Error saving flashcards:', error)
       alert('An error occurred while saving flashcards. Please try again.')
     }
+
   }
 
   const handleSubmit = async () => {
@@ -76,16 +93,18 @@ export default function Generate() {
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
-        body: text,
-      })
-        .then((res) => res.json()).then(data > setFlashCards(data))
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
   
       if (!response.ok) {
         throw new Error('Failed to generate flashcards')
       }
   
       const data = await response.json()
-      setFlashcards(data)
+      setFlashCards(data)
     } catch (error) {
       console.error('Error generating flashcards:', error)
       alert('An error occurred while generating flashcards. Please try again.')
@@ -99,12 +118,12 @@ export default function Generate() {
     }))
   )
 
-  const handleOpen = (id) => (
-    setOpen(true)
-  )
-  const handleClose = (id) => (
-    setOpen(false)
-  )
+  // const handleOpen = (id) => (
+  //   setOpen(true)
+  // )
+  // const handleClose = (id) => (
+  //   setOpen(false)
+  // )
   return (
     <Container maxWidth="md">
       <Box sx={{ my: 4 }}>
@@ -171,14 +190,14 @@ export default function Generate() {
             label="Set Name"
             type="text"
             fullWidth
-            value={setName}
-            onChange={(e) => setSetName(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={saveFlashcards} color="primary">
-            Save
+          <Button onClick={saveFlashcards} color="primary" disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

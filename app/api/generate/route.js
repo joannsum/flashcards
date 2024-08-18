@@ -19,22 +19,31 @@ You should return in the following JSON format:
 `
 
 export async function POST(req) {
-  const genAI = new GoogleGenerativeAI(API_KEY)
-  const model = genAI.getGenerativeModel({ model: MODEL_NAME })
+  try {
+    if (!API_KEY) {
+      throw new Error('NEXT_PUBLIC_GEMINI_API_KEY is not set')
+    }
 
-  const data = await req.text()
+    const genAI = new GoogleGenerativeAI(API_KEY)
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME })
 
-  const result = await model.generateContent([
-    { text: systemPrompt },
-    { text: data }
-  ])
+    const data = await req.text()
 
-  const response = result.response
-  const text = response.text()
+    const result = await model.generateContent([
+      { text: systemPrompt },
+      { text: data }
+    ])
 
-  // Parse the JSON response from the Gemini API
-  const flashcards = JSON.parse(text)
+    const response = result.response
+    const text = response.text()
 
-  // Return the flashcards as a JSON response
-  return NextResponse.json(flashcards.flashcards)
+    // Parse the JSON response from the Gemini API
+    const flashcards = JSON.parse(text)
+
+    // Return the flashcards as a JSON response
+    return NextResponse.json(flashcards.flashcards)
+  } catch (error) {
+    console.error('Error in generate API:', error)
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
+  }
 }

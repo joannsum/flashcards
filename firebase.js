@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
-// import { getFirebase } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
@@ -14,8 +13,7 @@ const firebaseConfig = {
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export default db;
+export { db };
