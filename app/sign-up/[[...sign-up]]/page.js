@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 export default function SignUpPage() {
   return (
-    <Container maxWidth="100vw">
+    <main>
     <AppBar position="static" sx={{backgroundColor: '#3f51b5'}}>
     <Toolbar>
         <Typography variant="h6" sx={{flexGrow: 1}}>
@@ -23,6 +23,7 @@ export default function SignUpPage() {
         </Button>
     </Toolbar>
     </AppBar>
+    <Container>
     <Box
       display="flex"
       flexDirection="column"
@@ -37,5 +38,6 @@ export default function SignUpPage() {
   </Box>
   
   </Container>
+  </main>
   )
 }

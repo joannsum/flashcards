@@ -32,9 +32,9 @@ export default function Home() {
       }
 
   return (
-    <Container>
-      <AppBar position="static">
-        <Toolbar>
+    <main>
+    <AppBar position="static">
+        <Toolbar >
           <Typography variant="h6" style={{flexGrow: 1}}>
             Flashcard SaaS
           </Typography>
@@ -47,6 +47,8 @@ export default function Home() {
           </SignedIn>
         </Toolbar>
       </AppBar>
+    <Container>
+      
       <Box sx={{textAlign: 'center', my: 4}}>
         <Typography variant="h2" component="h1" gutterBottom>
           Welcome to Flashcard SaaS
@@ -134,5 +136,6 @@ export default function Home() {
             </Grid>
         </Box>
     </Container>
+    </main>
   );
 }

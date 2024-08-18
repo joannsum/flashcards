@@ -20,7 +20,7 @@ import {
 import {
   useUser
 } from '@clerk/nextjs'
-import { db } from '../../firebase'
+import { db } from '../../firebase.js'
 import { doc, collection, getDoc, writeBatch } from 'firebase/firestore'
 
 
@@ -130,7 +130,7 @@ export default function Generate() {
         <Typography variant="h4" component="h1" gutterBottom>
           Generate Flashcards
         </Typography>
-        <TextField
+        <TextField 
           value={text}
           onChange={(e) => setText(e.target.value)}
           label="Enter text"
