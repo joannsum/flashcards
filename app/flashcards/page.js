@@ -1,48 +1,72 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useUser } from '@clerk/nextjs'
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore'
+import { db } from '@/firebase'
+import { useSearchParams } from 'next/navigation'
+import {
+  Container,
+  Grid,
+  Card,
+  CardActionArea,
+  CardContent,
+  Typography,
+} from '@mui/material'
+
 export default function Flashcard() {
-    const { isLoaded, isSignedIn, user } = useUser()
-    const [flashcards, setFlashcards] = useState([])
-    const router = useRouter()
+  const { isLoaded, isSignedIn, user } = useUser()
+  const [flashcards, setFlashcards] = useState([])
+  const searchParams = useSearchParams()
+  const search = searchParams.get('id')
 
-    const handleCardClick = (id) => {
-        router.push(`/flashcard?id=${id}`)
-    }
-  
-    useEffect(() => {
-        async function getFlashcards() {
-          if (!user) return
-          const docRef = doc(collection(db, 'users'), user.id)
-          const docSnap = await getDoc(docRef)
-          if (docSnap.exists()) {
-            const collections = docSnap.data().flashcards || []
-            setFlashcards(collections)
-          } else {
-            await setDoc(docRef, { flashcards: [] })
-          }
+  useEffect(() => {
+    async function getFlashcards() {
+      if (!isLoaded || !isSignedIn || !user || !search) return
+
+      try {
+        const userDocRef = doc(db, 'users', user.id)
+        const setDocRef = doc(collection(userDocRef, 'flashcardSets'), search)
+        const setDocSnap = await getDoc(setDocRef)
+
+        if (setDocSnap.exists()) {
+          setFlashcards(setDocSnap.data().flashcards || [])
+        } else {
+          console.log('No such document!')
         }
-        getFlashcards()
-      }, [user])
+      } catch (error) {
+        console.error('Error getting flashcards:', error)
+      }
+    }
 
-      return (
-        <Container maxWidth="md">
-          <Grid container spacing={3} sx={{ mt: 4 }}>
-            {flashcards.map((flashcard, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
-                <Card>
-                  <CardActionArea onClick={() => handleCardClick(flashcard.name)}>
-                    <CardContent>
-                      <Typography variant="h5" component="div">
-                        {flashcard.name}
-                      </Typography>
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
-      )
+    getFlashcards()
+  }, [isLoaded, isSignedIn, user, search])
 
+  if (!isLoaded || !isSignedIn) {
+    return <div>Loading...</div>
   }
+
+  return (
+    <Container maxWidth="md">
+      <Typography variant="h4" component="h1" gutterBottom>
+        Flashcards: {search}
+      </Typography>
+      <Grid container spacing={3}>
+        {flashcards.map((flashcard, index) => (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Card>
+              <CardActionArea>
+                <CardContent>
+                  <Typography variant="h6">Front:</Typography>
+                  <Typography>{flashcard.front}</Typography>
+                  <Typography variant="h6" sx={{ mt: 2 }}>Back:</Typography>
+                  <Typography>{flashcard.back}</Typography>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Container>
+  )
+}

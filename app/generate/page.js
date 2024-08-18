@@ -17,72 +17,123 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material'
-import {
-  useUser
-} from '@clerk/nextjs'
+import { useUser } from '@clerk/nextjs'
 import { db } from '../../firebase.js'
-import { doc, collection, getDoc, writeBatch } from 'firebase/firestore'
+import { doc, collection, getDoc, setDoc } from 'firebase/firestore'
+import { styled } from '@mui/system'
 
+// Styled components for the flashcard
+const FlashcardContainer = styled(Card)(({ theme }) => ({
+  perspective: '1000px',
+  height: '200px', // Set a fixed height for the card
+  cursor: 'pointer',
+}))
+
+const FlashcardInner = styled('div')(({ theme, flipped }) => ({
+  position: 'relative',
+  width: '100%',
+  height: '100%',
+  textAlign: 'center',
+  transition: 'transform 0.6s',
+  transformStyle: 'preserve-3d',
+  transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+}))
+
+const FlashcardFace = styled(CardContent)(({ theme, back }) => ({
+  position: 'absolute',
+  width: '100%',
+  height: '100%',
+  backfaceVisibility: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  transform: back ? 'rotateY(180deg)' : 'rotateY(0deg)',
+}))
 
 export default function Generate() {
-  const {isLoaded, isSignedIn, user} = useUser()
+  const { isLoaded, isSignedIn, user } = useUser()
   const [flashcards, setFlashCards] = useState([])
-  const [flipped, setFlipped] = useState([])
+  const [flipped, setFlipped] = useState({})
   const [text, setText] = useState('')
-  // const [name, setName] = useState([])
-  // const [open, setOpen] = useState([])
-  const router = useRouter()
-
   const [name, setName] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const router = useRouter()
+
   const handleOpenDialog = () => setDialogOpen(true)
   const handleCloseDialog = () => setDialogOpen(false)
-  const [isSaving, setIsSaving] = useState(false)
-
 
   const saveFlashcards = async () => {
-    if (!isSignedIn || !user) {
-      alert('Please sign in to save flashcards.')
-      return
-    }
-
-    if (!name.trim()) {
-      alert('Please enter a name for your flashcard set.')
-      return
-    }
-
-    setIsSaving(true)
-    try {
-      const userDocRef = doc(collection(db, 'users'), user.id)
-      const userDocSnap = await getDoc(userDocRef)
+    console.log('saveFlashcards function called');
+    console.log('isLoaded:', isLoaded);
+    console.log('isSignedIn:', isSignedIn);
+    console.log('user:', user);
   
-      const batch = writeBatch(db)
+    if (!isLoaded) {
+      console.log('Clerk is still loading');
+      return;
+    }
+  
+    if (!isSignedIn || !user) {
+      console.error('User not signed in');
+      alert('Please sign in to save flashcards.');
+      return;
+    }
+  
+    console.log('User ID:', user.id);
+  
+    if (!name.trim()) {
+      console.error('Set name is empty');
+      alert('Please enter a name for your flashcard set.');
+      return;
+    }
+  
+    setIsSaving(true);
+    try {
+      console.log('Starting to save flashcards');
+      console.log('Set name:', name);
+      console.log('Number of flashcards:', flashcards.length);
+  
+      const userDocRef = doc(db, 'users', user.id);
+      console.log('User document reference created:', userDocRef.path);
+  
+      const userDocSnap = await getDoc(userDocRef);
+      console.log('User document snapshot retrieved, exists:', userDocSnap.exists());
   
       if (userDocSnap.exists()) {
-        const userData = userDocSnap.data()
-        const updatedSets = [...(userData.flashcardSets || []), { name: setName }]
-        batch.update(userDocRef, { flashcardSets: updatedSets })
+        console.log('Updating existing user document');
+        const userData = userDocSnap.data();
+        const updatedSets = [...(userData.flashcardSets || []), { name: name }];
+        await setDoc(userDocRef, { flashcardSets: updatedSets }, { merge: true });
+        console.log('User document updated successfully');
       } else {
-        batch.set(userDocRef, { flashcardSets: [{ name: setName }] })
+        console.log('Creating new user document');
+        await setDoc(userDocRef, { flashcardSets: [{ name: name }] });
+        console.log('New user document created successfully');
       }
   
-      const setDocRef = doc(collection(userDocRef, 'flashcardSets'), setName)
-      batch.set(setDocRef, { flashcards })
+      const setDocRef = doc(collection(userDocRef, 'flashcardSets'), name);
+      console.log('Flashcard set document reference created:', setDocRef.path);
+      
+      console.log('Saving flashcards');
+      await setDoc(setDocRef, { flashcards });
+      console.log('Flashcards saved successfully');
   
-      await batch.commit()
-  
-      alert('Flashcards saved successfully!')
-      setIsSaving(false)
-      setDialogOpen(false)
-      router.push('/flashcards')
-      setName('')
+      alert('Flashcards saved successfully!');
+      setIsSaving(false);
+      setDialogOpen(false);
+      router.push(`/flashcards?id=${encodeURIComponent(name)}`);
+      setName('');
     } catch (error) {
-      setIsSaving(false)
-      console.error('Error saving flashcards:', error)
-      alert('An error occurred while saving flashcards. Please try again.')
+      console.error('Error saving flashcards:', error);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      console.error('Error occurred at:', new Date().toISOString());
+      console.error('User ID when error occurred:', user.id);
+      alert(`An error occurred while saving flashcards: ${error.message}`);
+      setIsSaving(false);
     }
-
-  }
+  };
 
   const handleSubmit = async () => {
     if (!text.trim()) {
@@ -110,20 +161,14 @@ export default function Generate() {
       alert('An error occurred while generating flashcards. Please try again.')
     }
   }
-  
-  const handleCardClick = (id) => (
+
+  const handleCardClick = (id) => {
     setFlipped((prev) => ({
       ...prev,
       [id]: !prev[id],
     }))
-  )
+  }
 
-  // const handleOpen = (id) => (
-  //   setOpen(true)
-  // )
-  // const handleClose = (id) => (
-  //   setOpen(false)
-  // )
   return (
     <Container maxWidth="md">
       <Box sx={{ my: 4 }}>
@@ -149,7 +194,6 @@ export default function Generate() {
           Generate Flashcards
         </Button>
       </Box>
-      
       {flashcards.length > 0 && (
         <Box sx={{ mt: 4 }}>
           <Typography variant="h5" component="h2" gutterBottom>
@@ -158,14 +202,18 @@ export default function Generate() {
           <Grid container spacing={2}>
             {flashcards.map((flashcard, index) => (
               <Grid item xs={12} sm={6} md={4} key={index}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6">Front:</Typography>
-                    <Typography>{flashcard.front}</Typography>
-                    <Typography variant="h6" sx={{ mt: 2 }}>Back:</Typography>
-                    <Typography>{flashcard.back}</Typography>
-                  </CardContent>
-                </Card>
+                <FlashcardContainer onClick={() => handleCardClick(index)}>
+                  <FlashcardInner flipped={flipped[index]}>
+                    <FlashcardFace>
+                      <Typography variant="h6">Front:</Typography>
+                      <Typography>{flashcard.front}</Typography>
+                    </FlashcardFace>
+                    <FlashcardFace back>
+                      <Typography variant="h6">Back:</Typography>
+                      <Typography>{flashcard.back}</Typography>
+                    </FlashcardFace>
+                  </FlashcardInner>
+                </FlashcardContainer>
               </Grid>
             ))}
           </Grid>

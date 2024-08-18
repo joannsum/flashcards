@@ -1,8 +1,9 @@
 'use client'
 
-// import { useState } from 'react'
+ import { useState, useEffect } from 'react'
 import getStripe from '../utils/get-stripe.js'
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
+import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs'
+import { signInWithClerk } from '../firebase.js'
 import {
   AppBar,
   Toolbar,
@@ -14,22 +15,29 @@ import {
 } from '@mui/material';
 
 export default function Home() {
-    const handleSubmit = async () => {
-        const checkoutSession = await fetch('/api/checkout_sessions', {
-          method: 'POST',
-          headers: { origin: 'http://localhost:3000' },
-        })
-        const checkoutSessionJson = await checkoutSession.json()
-      
-        const stripe = await getStripe()
-        const {error} = await stripe.redirectToCheckout({
-          sessionId: checkoutSessionJson.id,
-        })
-      
-        if (error) {
-          console.warn(error.message)
-        }
+  const { isSignedIn } = useUser()
+  useEffect(() => {
+    if (isSignedIn) {
+        signInWithClerk()  // Call signInWithClerk when the user is signed in
+    }
+}, [isSignedIn])
+
+  const handleSubmit = async () => {
+      const checkoutSession = await fetch('/api/checkout_sessions', {
+        method: 'POST',
+        headers: { origin: 'http://localhost:3000' },
+      })
+      const checkoutSessionJson = await checkoutSession.json()
+    
+      const stripe = await getStripe()
+      const {error} = await stripe.redirectToCheckout({
+        sessionId: checkoutSessionJson.id,
+      })
+    
+      if (error) {
+        console.warn(error.message)
       }
+    }
 
   return (
     <main>

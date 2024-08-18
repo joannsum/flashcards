@@ -14,6 +14,11 @@ const nextConfig = {
         STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
         CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+        FIREBASE_SERVICE_ACCOUNT_KEY: process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+    },
+    reactStrictMode: true,
+    images: {
+        domains: ['images.clerk.dev'],
     },
 };
 
